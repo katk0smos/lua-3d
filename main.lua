@@ -80,7 +80,8 @@ function love.update(dt)
 end
 
 function love.draw()
-	love.graphics.setColor(0,0,0)
+	love.graphics.setBackgroundColor(0, 0, 0)
+	love.graphics.setColor(255,255,255)
 	
 	love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
 	
@@ -130,21 +131,23 @@ function love.draw()
 		local rotatedX = Utility.rotate2D(Vector2.new(y, z), cam.rotation.x)
 		y, z = rotatedX.x, rotatedX.y
 		
-		table.insert(vertList, Vector3.new(x, y, z))
+		vertList[i] = Vector3.new(x, y, z)
 		
 		f = (w/2) / z
 		x, y = x*f, y*f
 	
-		table.insert(screenCoords, Vector2.new(x + cx, y + cy))
+		screenCoords[i] = Vector2.new(x + cx, y + cy)
 	end
 	
 	local faceList = {}
 	local faceColor = {}
 	local depth = {}
-	for i, face in ipairs(faces) do
+	for f = 1, #faces do
+		local face = faces[f]
 		local onScreen = false
 		for j,vert in ipairs(face) do
-			if vertList[vert].z > 0 then
+			local x,y = screenCoords[f].x, screenCoords[f].y
+			if vertList[vert].z > 0 and x > 0 and x < w and y > 0 and y < h then
 				onScreen = true
 				break
 			end
@@ -153,16 +156,44 @@ function love.draw()
 		if onScreen then
 			local coords = {}
 			for j,v in ipairs(face) do
-				table.insert(coords, screenCoords[v])
+				coords[j] = screenCoords[v]
 			end
 			
-			table.insert(faceList, coords)
-			table.insert(faceColor, colors[i])
+			faceList[f] = coords
+			faceColor[f] = colors[f]
+			
+			local sum = 0
+			for i = 1, 3 do
+				for fi,j in ipairs(face) do
+					sum = sum + Utility.sum(vertList[j][i])
+				end
+				
+				sum = sum ^ 2
+			end
+			
+			depth[f] = sum
 		end
 	end
 	
-	for i,v in pairs(faceList) do
-		love.graphics.setColor(faceColor[i].red or 0, faceColor[i].green or 0, faceColor[i].blue or 0)
+	local faceListSorted = {}
+	
+	pcall(function() table.sort(depth, function(a,b) return a<b end) end)
+	for i,v in ipairs(depth) do
+		table.insert(faceListSorted, faceList[#depth - i])
+	end
+	
+	local printStr = "{ "
+	for i,v in ipairs(depth) do
+		printStr = printStr .. v
+		if i < #depth then
+			printStr = printStr .. ", "
+		end
+	end
+	printStr = printStr .. " }"
+	print(printStr)
+	
+	for i,v in ipairs(faceListSorted) do
+		love.graphics.setColor(faceColor[i][1] or 255, faceColor[i][2] or 255, faceColor[i][3] or 255)
 		
 		local points = {}
 		for j,p in pairs(v) do

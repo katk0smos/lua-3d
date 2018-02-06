@@ -44,8 +44,8 @@ function _camera.new(pos, rot)
 	
 	function camera:mouse(x, y)
 		local x, y = x / 200, y / 200
-		self.rotation.x = self.rotation.x + y
-		self.rotation.y = self.rotation.y + x
+		self.rotation.x = self.rotation.x + y --math.max(math.min(self.rotation.x + y, math.pi - 0.0001), -math.pi + 0.0001)
+		self.rotation.y = self.rotation.y + x --math.max(math.min(self.rotation.y + x, math.pi/2 - 0.0001), -math.pi/2 + 0.0001)
 	end
 	
 	return camera
